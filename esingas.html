@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portafolio de Proyecto</title>
+    <style>
+        :root { --primary: #2c3e50; --accent: #e74c3c; --text: #ecf0f1; --bg: #1a1a1a; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; min-height: 100vh; }
+        
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+        
+        header { border-bottom: 2px solid var(--accent); padding-bottom: 20px; margin-bottom: 40px; }
+        h1 { margin: 0; font-size: 2.5rem; color: white; }
+        .subtitle { color: #95a5a6; font-size: 1.2rem; margin-top: 10px; }
+
+        .project-details { background: #252526; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .field { margin-bottom: 20px; }
+        .label { display: block; color: var(--accent); font-weight: bold; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 5px; }
+        .value { font-size: 1.1rem; line-height: 1.6; }
+
+        .actions { margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        
+        .btn-card {
+            background: #333; border: 1px solid #444; border-radius: 8px; padding: 20px;
+            text-decoration: none; color: white; transition: all 0.3s ease;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+        }
+        .btn-card:hover { transform: translateY(-5px); background: #3e3e42; border-color: var(--accent); }
+        .icon { font-size: 2rem; margin-bottom: 10px; }
+        .btn-text { font-weight: bold; font-size: 1.1rem; }
+
+        @media(max-width: 600px) { .actions { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ANÁLISIS DE ESTADOS FINANCIEROS CON UN ENFOQUE INTERPRETATIVO Y VISUAL CON POWER BI, PARA LA EMPRESA DE SERVICIOS ESINGAS DE GESTIONES 2021-2024</h1>
+            <div class="subtitle">Proyecto de Grado para optar el título de Contador General</div>
+        </header>
+
+        <section class="project-details">
+            <div class="field">
+                <span class="label">Descripción del Proyecto</span>
+                <div class="value">
+                    Este trabajo está estructurado de la siguiente manera: la Introducción, que expone la importancia del tema de investigación, el CAPÍTULO I, presenta el planteamiento del problema de la entidad y la estructura de la investigación; la Formulación del problema, donde se plantea la ubicación del asunto que se va a investigar; la Justificación, donde se mencionan las razones por las cuales es necesario e importante realizar el estudio; los Objetivos que indican lo que se pretende alcanzar con la realización de este estudio.
+                    El CAPÍTULO II, indica el Marco Teórico, en el cual, se aborda toda la recopilación de la información basada en conceptos descritos por autores acerca del Análisis de Estados Financieros y el proceso contable. En el CAPÍTULO III, desarrollaremos la propuesta y la metodología que describe el tipo de estudio realizado, la población objeto de estudio y los procedimientos utilizados para la recolección y procesamiento de la información; finalmente se presenta el CAPÍTULO IV, con las Conclusiones y Recomendaciones, también, se presenta la Bibliografía con las fuentes de información utilizadas en el desarrollo teórico y práctico del presente trabajo.
+                </div>
+            </div>
+            
+            <div class="field">
+                <span class="label">Tecnologías</span>
+                <div class="value">Power BI.</div>
+            </div>
+
+            <div class="field">
+                <span class="label">Documentación Disponible</span>
+                <div class="value">Seleccione uno de los siguientes manuales para iniciar el modo lectura inmersiva.</div>
+            </div>
+
+            <div class="actions">
+                <a href="visor.html?doc=docs/ppt.pdf" class="btn-card">
+                    <div class="icon">📕</div>
+                    <div class="btn-text">Leer proyecto</div>
+                    <small>Ver documentación completa</small>
+                </a>
+
+                <a href="visor.html?doc=docs/proyecto.pdf" class="btn-card">
+                    <div class="icon">📘</div>
+                    <div class="btn-text">Ver presentación</div>
+                    <small>Ver presentación</small>
+                </a>
+            </div>
+        </section>
+    </div>
+</body>
+</html>

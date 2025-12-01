@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lector Inmersivo</title>
+    <style>
+        /* Estilos idénticos a los anteriores pero optimizados para pantalla completa */
+        body { margin: 0; background: #1e1e1e; font-family: sans-serif; overflow: hidden; height: 100vh; display: flex; }
+        
+        /* SIDEBAR (Índice) */
+        #sidebar { width: 260px; background: #252526; color: #ddd; display: flex; flex-direction: column; border-right: 1px solid #333; z-index: 20; transition: transform 0.3s; }
+        #sidebar.closed { transform: translateX(-100%); position: absolute; height: 100%; }
+        .sidebar-header { padding: 15px; background: #111; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        #toc-list { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex: 1; }
+        .toc-item { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #333; font-size: 0.9rem; }
+        .toc-item:hover { background: #333; color: #4facfe; }
+
+        /* MAIN AREA */
+        #main { flex: 1; display: flex; flex-direction: column; position: relative; width: 100%; }
+        
+        /* TOOLBAR */
+        .toolbar { background: #2d2d30; padding: 10px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.5); z-index: 10; }
+        .btn { background: #3e3e42; border: none; color: white; padding: 8px 12px; border-radius: 4px; cursor: pointer; margin: 0 2px; }
+        .btn:hover { background: #007acc; }
+        .btn-back { background: #e74c3c; font-weight: bold; }
+
+        /* LIBRO */
+        #book-viewport { flex: 1; overflow: hidden; display: flex; justify-content: center; align-items: center; position: relative; background: #1e1e1e; }
+        #zoom-layer { transition: transform 0.3s ease; transform-origin: center top; }
+        
+        .page { background: white; box-shadow: inset -5px 0 10px rgba(0,0,0,0.1); }
+        .loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; background: rgba(0,0,0,0.8); padding: 20px; border-radius: 8px; z-index: 100; }
+        
+        /* Proteccion */
+        .secure { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; }
+    </style>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.js"></script>
+</head>
+<body oncontextmenu="return false">
+
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <span>📖 Índice</span>
+            <button class="btn" onclick="toggleSidebar()">✕</button>
+        </div>
+        <ul id="toc-list">
+            <li style="padding:15px; color:#777">Cargando marcadores...</li>
+        </ul>
+    </div>
+
+    <div id="main">
+        <div class="toolbar">
+            <div>
+                <button class="btn" onclick="toggleSidebar()">☰ Índice</button>
+                <a href="esingas.html" class="btn btn-back">⬅ Volver al Proyecto</a>
+            </div>
+            <div>
+                <button class="btn" id="prev">Anterior</button>
+                <button class="btn" id="next">Siguiente</button>
+            </div>
+            <div>
+                <button class="btn" onclick="zoom(-0.1)">-</button>
+                <button class="btn" onclick="zoom(0.1)">+</button>
+            </div>
+        </div>
+
+        <div id="book-viewport">
+            <div id="zoom-layer">
+                <div id="flip-book"></div>
+            </div>
+        </div>
+        
+        <div id="loader" class="loading">Cargando Documento Seguro...</div>
+    </div>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // 1. OBTENER URL DEL PARAMETRO
+        const urlParams = new URLSearchParams(window.location.search);
+        // Si no hay parámetro, usa un default o muestra error
+        const pdfUrl = urlParams.get('doc'); 
+
+        if (!pdfUrl) {
+            alert("No se especificó ningún documento.");
+            window.location.href = "esingas.html";
+        }
+
+        const bookEl = document.getElementById('flip-book');
+        const zoomLayer = document.getElementById('zoom-layer');
+        let pageFlip;
+        let currentZoom = 1;
+        let pdfDoc = null;
+
+        // INICIAR
+        loadBook();
+
+        async function loadBook() {
+            try {
+                // Cargar PDF
+                const loadingTask = pdfjsLib.getDocument(pdfUrl);
+                pdfDoc = await loadingTask.promise;
+
+                // 1. Renderizar Índice (Bookmarks)
+                await renderTOC(pdfDoc);
+
+                // 2. Preparar Libro
+                const page1 = await pdfDoc.getPage(1);
+                const viewport = page1.getViewport({ scale: 1 });
+                
+                pageFlip = new St.PageFlip(bookEl, {
+                    width: viewport.width,
+                    height: viewport.height,
+                    size: 'fixed',
+                    minWidth: 300, 
+                    maxWidth: 1000,
+                    minHeight: 400,
+                    maxHeight: 1400,
+                    showCover: true,
+                    maxShadowOpacity: 0.5
+                });
+
+                // Crear elementos HTML
+                for (let i = 1; i <= pdfDoc.numPages; i++) {
+                    const div = document.createElement('div');
+                    div.className = 'page';
+                    div.innerHTML = `<div class="secure"></div><canvas id="canv${i}"></canvas>`;
+                    bookEl.appendChild(div);
+                }
+
+                pageFlip.loadFromHTML(document.querySelectorAll('.page'));
+                document.getElementById('loader').style.display = 'none';
+
+                // Renderizar Canvas (Lazy rendering básico)
+                for (let i = 1; i <= pdfDoc.numPages; i++) {
+                    renderPage(i);
+                }
+
+            } catch (e) {
+                document.getElementById('loader').innerHTML = "Error: " + e.message;
+            }
+        }
+
+        async function renderPage(num) {
+            const page = await pdfDoc.getPage(num);
+            const canvas = document.getElementById(`canv${num}`);
+            const ctx = canvas.getContext('2d');
+            
+            // Renderizar a alta calidad
+            const viewport = page.getViewport({ scale: 2 }); // Scale 2 para nitidez
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+
+            await page.render({ canvasContext: ctx, viewport }).promise;
+        }
+
+        async function renderTOC(pdf) {
+            const outline = await pdf.getOutline();
+            const list = document.getElementById('toc-list');
+            list.innerHTML = '';
+
+            if (!outline) {
+                list.innerHTML = '<li style="padding:15px">Sin marcadores</li>';
+                return;
+            }
+
+            // Función recursiva para el arbol de marcadores
+            const buildList = (items, target) => {
+                items.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = 'toc-item';
+                    li.innerText = item.title;
+                    li.onclick = async () => {
+                        if (item.dest) {
+                            // Convertir destino a número de página
+                            const dest = typeof item.dest === 'string' ? 
+                                await pdf.getDestination(item.dest) : item.dest;
+                            const pageIndex = await pdf.getPageIndex(dest[0]);
+                            pageFlip.flip(pageIndex);
+                        }
+                    };
+                    target.appendChild(li);
+                    
+                    if(item.items && item.items.length > 0) {
+                        const ul = document.createElement('ul');
+                        ul.style.paddingLeft = '15px';
+                        buildList(item.items, ul);
+                        target.appendChild(ul);
+                    }
+                });
+            };
+            buildList(outline, list);
+        }
+
+        // CONTROLES
+        document.getElementById('prev').onclick = () => pageFlip.flipPrev();
+        document.getElementById('next').onclick = () => pageFlip.flipNext();
+
+        function zoom(delta) {
+            currentZoom += delta;
+            if (currentZoom < 0.5) currentZoom = 0.5;
+            if (currentZoom > 2) currentZoom = 2;
+            zoomLayer.style.transform = `scale(${currentZoom})`;
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('closed');
+        }
+        
+        // Atajos
+        document.addEventListener('keydown', e => {
+            if(e.key === 'ArrowRight') pageFlip.flipNext();
+            if(e.key === 'ArrowLeft') pageFlip.flipPrev();
+        });
+    </script>
+</body>
+</html>
